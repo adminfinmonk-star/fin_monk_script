@@ -1,0 +1,46 @@
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" fill="none">
+  <!-- Outer ring -->
+  <circle cx="50" cy="50" r="46" stroke="#f97316" stroke-width="2.8"/>
+
+  <!-- Head -->
+  <circle cx="50" cy="19.5" r="8" fill="#1a1f36"/>
+  <!-- Head highlight -->
+  <circle cx="46.5" cy="16.5" r="2.6" fill="rgba(255,255,255,0.22)"/>
+
+  <!-- Upper M body: arms/torso forming the M shape -->
+  <path
+    d="M 37,29
+       C 36,27 34,26 32,27
+       L 22,44
+       C 20,49 22,55 27,57
+       L 39,63
+       L 50,56
+       L 61,63
+       C 66,55 80,49 78,44
+       L 68,27
+       C 66,26 64,27 63,29
+       L 58,34
+       C 55,26 50,27 50,27
+       C 50,27 45,26 42,34
+       Z"
+    fill="#1a1f36"
+  />
+
+  <!-- Lower wider chevron -->
+  <path
+    d="M 15,65
+       L 44,80
+       L 50,74
+       L 56,80
+       L 85,65
+       C 85,65 74,73 72,73
+       L 50,87
+       L 28,73
+       C 26,73 15,65 15,65
+       Z"
+    fill="#1a1f36"
+  />
+
+  <!-- Base oval / shadow -->
+  <ellipse cx="50" cy="87" rx="27" ry="7.5" fill="#1a1f36"/>
+</svg>
