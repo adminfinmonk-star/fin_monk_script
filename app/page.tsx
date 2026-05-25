@@ -1,3 +1,5 @@
+"use client";
+import { useRef, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import LeadForm from "@/components/LeadForm";
@@ -5,8 +7,17 @@ import TrustBar from "@/components/TrustBar";
 import HowItWorks from "@/components/HowItWorks";
 import MobileStickyBar from "@/components/MobileStickyBar";
 import FinmonkLogo from "@/components/FinmonkLogo";
+import { useFormFocus } from "@/lib/useFormFocus";
 
 export default function Home() {
+  const formPanelRef = useRef<HTMLDivElement>(null);
+  const { scrollToForm } = useFormFocus();
+
+  useEffect(() => {
+    const t = setTimeout(() => scrollToForm(formPanelRef), 600);
+    return () => clearTimeout(t);
+  }, []);
+
   return (
     <>
       <Navbar />
@@ -28,6 +39,7 @@ export default function Home() {
 
           {/* Right — Form */}
           <div
+            ref={formPanelRef}
             style={{
               background: "var(--surface-2)",
               display: "flex",
@@ -71,8 +83,8 @@ export default function Home() {
       <style>{`
         @media (max-width: 768px) {
           .hero-grid { grid-template-columns: 1fr !important; }
-          .hero-panel { min-height: 380px !important; }
-          .form-panel { padding: 28px 16px !important; }
+          .hero-panel { min-height: 280px !important; order: 2; }
+          .form-panel { padding: 28px 16px !important; order: 1; }
         }
       `}</style>
     </>

@@ -3,10 +3,7 @@
  * Tracks user behavior through the Finmonk LAC form funnel
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import { LeadPayload } from "./disqualifyLogic";
-import type { UTMData } from "./utm";
 
 export interface PostHogEvent {
   event: string;
@@ -28,67 +25,14 @@ export function initPostHog() {
 
   // Official PostHog stub — queues calls before script loads
   // prettier-ignore
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (function (t: Document, e: any) {
-    let o: string[];
-    let n: number;
-    let p: HTMLScriptElement;
-    let r: HTMLScriptElement;
-    if (!e.__SV) {
-      (window as any).posthog = e;
-      e._i = [];
-      e.init = function (i: any, s: any, a: any) {
-        function g(t: any, e: string) {
-          const parts = e.split(".");
-          if (parts.length === 2) {
-            t = t[parts[0]];
-            e = parts[1];
-          }
-          t[e] = function (...args: any[]) {
-            t.push([e].concat(args));
-          };
-        }
-        p = t.createElement("script");
-        p.type = "text/javascript";
-        p.async = true;
-        p.src = (s.asset_host || "https://us-assets.i.posthog.com") + "/static/array.js";
-        r = t.getElementsByTagName("script")[0] as HTMLScriptElement;
-        r.parentNode?.insertBefore(p, r);
-        let u: any = e;
-        if (a !== undefined) {
-          u = (e[a] = []);
-        } else {
-          a = "posthog";
-        }
-        u.people = u.people || [];
-        u.toString = function (t: any) {
-          let e = "posthog";
-          if ("posthog" !== a) {
-            e += "." + a;
-          }
-          if (!t) {
-            e += " (stub)";
-          }
-          return e;
-        };
-        u.people.toString = function () {
-          return u.toString(1) + " (stub)";
-        };
-        o = "init capture register register_once register_for_session unregister unregister_for_session getFeatureFlag getFeatureFlagPayload isFeatureEnabled reloadFeatureFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSessionId getSurveys getActiveMatchingSurveys renderSurvey canRenderSurvey identify alias setPersonProperties groupIdentify".split(" ");
-        for (n = 0; n < o.length; n++) {
-          g(u, o[n]);
-        }
-        e._i.push([i, s, a]);
-      };
-      e.__SV = 1;
-    }
-  })(document, (window as any).posthog || []);
+  // eslint-disable-next-line
+  !function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}};(p=t.createElement("script")).type="text/javascript",p.async=!0,p.src=(s.asset_host||"https://us-assets.i.posthog.com")+"/static/array.js";(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;void 0!==a?u=e[a]=[]:a="posthog";u.people=u.people||[];u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e};u.people.toString=function(){return u.toString(1)+" (stub)"};o="init capture register register_once register_for_session unregister unregister_for_session getFeatureFlag getFeatureFlagPayload isFeatureEnabled reloadFeatureFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSessionId getSurveys getActiveMatchingSurveys renderSurvey canRenderSurvey identify alias setPersonProperties groupIdentify".split(" ");for(n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,(window as any).posthog||[]);
 
   (window as any).posthog.init(posthogKey, {
     api_host: "https://us.i.posthog.com",
     asset_host: "https://us-assets.i.posthog.com",
     person_profiles: "identified_only",
-    loaded: function (posthog: { identify: (id: string) => void }) {
+    loaded: function (posthog: any) {
       posthog.identify(getOrCreateSessionId());
     },
   });
@@ -377,7 +321,7 @@ export function trackDeviceInfo() {
 /**
  * Session started with UTM parameters
  */
-export function trackSessionWithUTM(utm: UTMData) {
+export function trackSessionWithUTM(utm: Record<string, string>) {
   track("session_utm", {
     utm_source: utm.utm_source || "",
     utm_medium: utm.utm_medium || "",

@@ -111,9 +111,9 @@ export default function Hero() {
         style={{ display: "flex", gap: 32 }}
       >
         {[
-          { val: "₹10L", label: "Max Loan" },
+          { val: "₹20L", label: "Max Loan" },
           { val: "24 hrs", label: "Disbursal" },
-          { val: "14%", label: "Starting Rate" },
+          { val: "Best", label: "Intrest Rate" },
         ].map(({ val, label }) => (
           <div key={label}>
             <div style={{ fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: 26, color: "#ffffff" }}>

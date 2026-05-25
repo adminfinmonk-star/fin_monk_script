@@ -11,6 +11,7 @@ import { calculateScore, getSegment, buildFlags, LeadPayload } from "@/lib/disqu
 import { getStoredUTM, hasProductParam } from "@/lib/utm";
 import { submitLead } from "@/lib/submitLead";
 import { Pixel } from "@/lib/pixel";
+import { useFormFocus } from "@/lib/useFormFocus";
 
 interface FormData {
   product: string;
@@ -63,12 +64,29 @@ export default function LeadForm() {
   const [loading, setLoading] = useState(false);
   const interacted = useRef(false);
   const partialSent = useRef(false);
+  const formRef = useRef<HTMLDivElement>(null);
+  const formContainerRef = useRef<HTMLDivElement>(null);
+  const isFirstRender = useRef(true);
+  const { scrollToForm, focusFirstField } = useFormFocus();
 
   useEffect(() => {
     if (hasProductParam("lac")) {
       setData((d) => ({ ...d, product: "LAC" }));
     }
   }, []);
+
+  // Scroll to form top and focus first field on step transitions (mobile only)
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    const t = setTimeout(() => {
+      scrollToForm(formRef);
+      focusFirstField(formContainerRef);
+    }, 300);
+    return () => clearTimeout(t);
+  }, [step]);
 
   const update = (patch: Partial<FormData>) => {
     setData((d) => ({ ...d, ...patch }));
@@ -128,12 +146,12 @@ export default function LeadForm() {
       carValue: data.carValue,
       loanAmount: data.loanAmount,
       city: data.city,
-      employment: "salaried",
-      income: "",
-      name: "",
-      phone: "",
-      consent_call: false,
-      consent_whatsapp: false,
+      employment: (data.employment || "salaried") as LeadPayload["employment"],
+      income: data.income,
+      name: data.name.trim(),
+      phone: data.phone,
+      consent_call: data.consent_call,
+      consent_whatsapp: data.consent_whatsapp,
       ...utm,
       timestamp: new Date().toISOString(),
       flags: buildFlags(data as Partial<LeadPayload>),
@@ -146,6 +164,14 @@ export default function LeadForm() {
 
   async function next() {
     if (step === 1) {
+      // Step 1 = personal info (was Screen3)
+      const e = validateScreen3();
+      if (Object.keys(e).length) { setErrors(e); triggerShake(Object.keys(e)); return; }
+      setErrors({});
+      sendPartialLead(); // capture name/phone early
+      setDir(1); setStep(2);
+    } else if (step === 2) {
+      // Step 2 = car details (was Screen1)
       const e = validateScreen1();
       if (Object.keys(e).length) { setErrors(e); triggerShake(Object.keys(e)); return; }
       setErrors({});
@@ -154,12 +180,6 @@ export default function LeadForm() {
         await handleNonLACSubmit();
         return;
       }
-      setDir(1); setStep(2);
-    } else if (step === 2) {
-      const e = validateScreen2();
-      if (Object.keys(e).length) { setErrors(e); triggerShake(Object.keys(e)); return; }
-      setErrors({});
-      sendPartialLead();
       setDir(1); setStep(3);
     }
   }
@@ -186,7 +206,7 @@ export default function LeadForm() {
 
   async function handleSubmit() {
     if (data.honeypot) { setSubmitted(true); setSubmitOk(true); return; }
-    const e = validateScreen3();
+    const e = validateScreen2();
     if (Object.keys(e).length) { setErrors(e); triggerShake(Object.keys(e)); return; }
     setErrors({});
     setLoading(true);
@@ -231,7 +251,7 @@ export default function LeadForm() {
     setErrors({});
   }
 
-  const ctaText = step === 3 ? "Check My Eligibility →" : "Continue →";
+  const ctaText = step === 3 ? "Get My Loan Offers →" : step === 2 ? "Continue →" : "Check My Eligibility →";
 
   if (submitted) {
     return (
@@ -250,6 +270,7 @@ export default function LeadForm() {
   return (
     <motion.div
       id="lead-form"
+      ref={formRef}
       initial={{ y: 30, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.5, delay: 0.15, type: "spring", stiffness: 120 }}
@@ -273,27 +294,27 @@ export default function LeadForm() {
 
       {/* Progress */}
       <div style={{ marginBottom: 24 }}>
-        <div style={{ fontFamily: "var(--font-dm)", fontSize: 12, color: "var(--text-muted)", marginBottom: 8 }}>
-          Step {step} of 3
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
+          <span style={{ fontFamily: "var(--font-dm)", fontWeight: 600, fontSize: 12, color: "var(--text-primary)" }}>
+            Step {step} of 3
+          </span>
+          <span style={{ fontFamily: "var(--font-dm)", fontSize: 11, color: "var(--text-muted)" }}>
+            Takes ~90 seconds
+          </span>
         </div>
-        <div style={{ display: "flex", gap: 6 }}>
-          {[1, 2, 3].map((s) => (
-            <div
-              key={s}
-              style={{
-                flex: 1,
-                height: 4,
-                borderRadius: 4,
-                background: s <= step ? "var(--accent)" : "var(--border)",
-                transition: "background 0.3s ease",
-              }}
-            />
-          ))}
+        <div style={{ height: 5, borderRadius: 99, background: "var(--border)", overflow: "hidden" }}>
+          <div style={{
+            height: "100%",
+            width: `${Math.round((step / 3) * 100)}%`,
+            background: "var(--accent)",
+            borderRadius: 99,
+            transition: "width 0.4s ease",
+          }} />
         </div>
       </div>
 
       {/* Form screens */}
-      <div style={{ position: "relative", overflow: "hidden", minHeight: 200 }}>
+      <div ref={formContainerRef} style={{ position: "relative", overflow: "hidden", minHeight: 200 }}>
         <AnimatePresence mode="wait" custom={dir}>
           <motion.div
             key={step}
@@ -304,9 +325,9 @@ export default function LeadForm() {
             exit="exit"
             transition={{ duration: 0.28, ease: "easeInOut" }}
           >
-            {step === 1 && <FormScreen1 data={data} onChange={update} errors={errors} shakeFields={shakeFields} />}
-            {step === 2 && <FormScreen2 data={data} onChange={update} errors={errors} shakeFields={shakeFields} />}
-            {step === 3 && <FormScreen3 data={data} onChange={update} errors={errors} shakeFields={shakeFields} />}
+            {step === 1 && <FormScreen3 data={data} onChange={update} errors={errors} shakeFields={shakeFields} />}
+            {step === 2 && <FormScreen1 data={data} onChange={update} errors={errors} shakeFields={shakeFields} />}
+            {step === 3 && <FormScreen2 data={data} onChange={update} errors={errors} shakeFields={shakeFields} />}
           </motion.div>
         </AnimatePresence>
       </div>
@@ -317,10 +338,10 @@ export default function LeadForm() {
           onClick={step === 3 ? handleSubmit : next}
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
-          disabled={loading || (step === 3 && !data.consent_call)}
+          disabled={loading || (step === 1 && !data.consent_call)}
           style={{
             width: "100%",
-            background: (step === 3 && !data.consent_call) ? "rgba(249,115,22,0.45)" : "var(--accent)",
+            background: (step === 1 && !data.consent_call) ? "rgba(249,115,22,0.45)" : "var(--accent)",
             color: "#fff",
             border: "none",
             borderRadius: 12,
@@ -328,7 +349,7 @@ export default function LeadForm() {
             fontFamily: "var(--font-dm)",
             fontWeight: 600,
             fontSize: 17,
-            cursor: (step === 3 && !data.consent_call) ? "not-allowed" : "pointer",
+            cursor: (step === 1 && !data.consent_call) ? "not-allowed" : "pointer",
             boxShadow: "var(--shadow-cta)",
             display: "flex",
             alignItems: "center",
