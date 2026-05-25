@@ -25,7 +25,8 @@ export default function AnalyticsInit() {
     // Track UTM session
     const utm = getCapturedUTM();
     if (utm) {
-      trackSessionWithUTM(utm);
+      // cast to a plain record to satisfy trackSessionWithUTM's parameter shape
+      trackSessionWithUTM(utm as unknown as Record<string, string>);
     }
   }, []);
 
