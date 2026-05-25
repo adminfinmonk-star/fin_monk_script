@@ -123,7 +123,7 @@ Font: DM Sans, 18px, `var(--text-secondary)`
 ### Stats Row (3 numbers side by side)
 
 ```
-₹10L          24 hrs         14%
+₹10L          24 hrs         Best
 Max Loan    Disbursal     Starting Rate
 ```
 

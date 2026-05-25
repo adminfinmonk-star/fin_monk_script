@@ -25,6 +25,7 @@ NEXT_PUBLIC_CLARITY_ID=your_clarity_id
 ```
 
 Get these from:
+
 - **PostHog:** app.posthog.com → Project settings
 - **Clarity:** clarity.microsoft.com → Project ID
 
@@ -35,7 +36,7 @@ Get these from:
 ### Page Level
 
 | Event | When | Properties | Dashboard Use |
-|-------|------|-----------|---|
+| --- | --- | --- | --- |
 | `page_view` | Page loads | `url`, `referrer` | Traffic source, entry page |
 | `device_info` | Page loads | `device_type`, `viewport_width`, `user_agent` | Mobile vs desktop split |
 | `session_utm` | Page loads + UTM present | `utm_source`, `utm_medium`, `utm_campaign`, `utm_content`, `fbclid` | Campaign performance, attribution |
@@ -43,7 +44,7 @@ Get these from:
 ### Funnel Events (Track in Order)
 
 | Event | When | Properties | Funnel Stage |
-|-------|------|-----------|---|
+| --- | --- | --- | --- |
 | `form_started` | User enters Screen 1 | `source` (utm_source or "organic") | Stage 1: Awareness → Engagement |
 | `form_screen_viewed` | User views any screen | `screen_number`, `screen_name` | Track which screens users reach |
 | `form_field_interaction` | User selects/fills any field | `field_name`, `field_value`, `screen_number` | Micro-conversions, field engagement |
@@ -57,14 +58,14 @@ Get these from:
 ### Conversion Events
 
 | Event | When | Properties |
-|-------|------|-----------|
+| --- | --- | --- |
 | `success_screen_viewed` | After successful submit | `lead_name`, `phone_masked`, `segment` |
 | `whatsapp_cta_clicked` | User clicks WhatsApp CTA | `source` (success_screen, error_fallback), `scenario` |
 
 ### Engagement Events
 
 | Event | When | Properties |
-|-------|------|-----------|
+| --- | --- | --- |
 | `cta_button_clicked` | User clicks primary CTA | `location` (hero, form, sticky_bar, how_it_works), `button_text` |
 | `sticky_bar_engagement` | Mobile sticky bar interaction | `action` (shown, clicked, dismissed) |
 | `trust_bar_interaction` | User interacts with trust item | `item` (lender_partners, rating, etc) |
@@ -72,15 +73,15 @@ Get these from:
 
 ### Product Segmentation
 
-| Event | When | Properties |
-|-------|------|-----------|
-| `product_selected` | User picks LAC/UCL/NCL | `product` (LAC, UCL, NCL) |
-| `lead_segmented` | Non-LAC product selected | `product`, `reason` |
+| Event              | When                     | Properties                |
+| ------------------ | ------------------------ | ------------------------- |
+| `product_selected` | User picks LAC/UCL/NCL   | `product` (LAC, UCL, NCL) |
+| `lead_segmented`   | Non-LAC product selected | `product`, `reason`       |
 
 ### Field-Level Events
 
 | Event | When | Properties |
-|-------|------|-----------|
+| --- | --- | --- |
 | `emi_preview_viewed` | EMI calculation displays | `loan_amount`, `monthly_emi` |
 | `consent_checkbox_toggled` | User checks/unchecks consent | `consent_type` (call, whatsapp), `checked` |
 
@@ -126,12 +127,12 @@ success_screen_viewed
 ### LeadForm.tsx
 
 ```typescript
-import { 
-  trackFormStarted, 
-  trackScreenView, 
-  trackFormSubmitSuccess, 
-  trackPartialLead 
-} from '@/lib/posthog';
+import {
+  trackFormStarted,
+  trackScreenView,
+  trackFormSubmitSuccess,
+  trackPartialLead,
+} from "@/lib/posthog";
 
 export default function LeadForm() {
   useEffect(() => {
@@ -143,10 +144,10 @@ export default function LeadForm() {
   const handleNextScreen = () => {
     if (currentScreen === 2) {
       // Track partial lead after Screen 2
-      trackPartialLead({...formData});
+      trackPartialLead({ ...formData });
     }
     trackScreenView(currentScreen + 1, getScreenName(currentScreen + 1));
-    setCurrentScreen(prev => prev + 1);
+    setCurrentScreen((prev) => prev + 1);
   };
 
   // On submit:
@@ -164,27 +165,27 @@ export default function LeadForm() {
 ### FormScreen1.tsx (Car Details)
 
 ```typescript
-import { trackFieldInteraction, trackValidationError } from '@/lib/posthog';
+import { trackFieldInteraction, trackValidationError } from "@/lib/posthog";
 
 export default function FormScreen1() {
   const handleProductSelect = (product: string) => {
-    trackFieldInteraction('product_type', product, 1);
+    trackFieldInteraction("product_type", product, 1);
     setSelectedProduct(product);
   };
 
   const handleRCOwnershipSelect = (ownership: string) => {
-    trackFieldInteraction('rc_ownership', ownership, 1);
+    trackFieldInteraction("rc_ownership", ownership, 1);
     setRCOwnership(ownership);
   };
 
   const handleCarBrandSelect = (brand: string) => {
-    trackFieldInteraction('car_brand', brand, 1);
+    trackFieldInteraction("car_brand", brand, 1);
     setCarBrand(brand);
   };
 
   const handleValidationError = (field: string, message: string) => {
     trackValidationError(field, message);
-    setErrors(prev => ({...prev, [field]: message}));
+    setErrors((prev) => ({ ...prev, [field]: message }));
   };
 }
 ```
@@ -192,36 +193,36 @@ export default function FormScreen1() {
 ### FormScreen2.tsx (Loan Details)
 
 ```typescript
-import { 
-  trackFieldInteraction, 
+import {
+  trackFieldInteraction,
   trackEMIPreviewViewed,
-  trackDisqualificationMessage 
-} from '@/lib/posthog';
+  trackDisqualificationMessage,
+} from "@/lib/posthog";
 
 export default function FormScreen2() {
   const handleCarValueSelect = (value: string) => {
-    trackFieldInteraction('car_value', value, 2);
+    trackFieldInteraction("car_value", value, 2);
     setCarValue(value);
   };
 
   const handleLoanAmountSelect = (amount: string) => {
-    trackFieldInteraction('loan_amount', amount, 2);
+    trackFieldInteraction("loan_amount", amount, 2);
     setLoanAmount(amount);
-    
+
     // Calculate and track EMI
     const emi = calculateEMI(amount);
     trackEMIPreviewViewed(amount, emi);
   };
 
   const handleCitySelect = (city: string) => {
-    trackFieldInteraction('city', city, 2);
+    trackFieldInteraction("city", city, 2);
     setCity(city);
   };
 
   // Track disqualification warnings
   useEffect(() => {
     if (loanAmount > carValue * 0.8) {
-      trackDisqualificationMessage('loan_amount', 'high_ltv');
+      trackDisqualificationMessage("loan_amount", "high_ltv");
     }
   }, [loanAmount, carValue]);
 }
@@ -230,28 +231,28 @@ export default function FormScreen2() {
 ### FormScreen3.tsx (Contact + Consent)
 
 ```typescript
-import { 
-  trackFieldInteraction, 
+import {
+  trackFieldInteraction,
   trackConsentInteraction,
-  trackValidationError 
-} from '@/lib/posthog';
+  trackValidationError,
+} from "@/lib/posthog";
 
 export default function FormScreen3() {
   const handleNameChange = (name: string) => {
     if (name.length >= 3) {
-      trackFieldInteraction('name', name, 3);
+      trackFieldInteraction("name", name, 3);
     }
   };
 
   const handlePhoneChange = (phone: string) => {
     if (phone.length === 10) {
-      trackFieldInteraction('phone', phone, 3);
+      trackFieldInteraction("phone", phone, 3);
     }
   };
 
-  const handleConsentToggle = (type: 'call' | 'whatsapp', checked: boolean) => {
+  const handleConsentToggle = (type: "call" | "whatsapp", checked: boolean) => {
     trackConsentInteraction(type, checked);
-    setConsent(prev => ({...prev, [type]: checked}));
+    setConsent((prev) => ({ ...prev, [type]: checked }));
   };
 }
 ```
@@ -259,9 +260,9 @@ export default function FormScreen3() {
 ### SuccessScreen.tsx
 
 ```typescript
-import { 
-  trackSuccessScreen, 
-  trackWhatsAppClick 
+import {
+  trackSuccessScreen,
+  trackWhatsAppClick
 } from '@/lib/posthog';
 
 export default function SuccessScreen({ name, phone, segment }: Props) {
@@ -327,21 +328,21 @@ export default function HowItWorks() {
 ### Mobile sticky bar (if implemented in page.tsx)
 
 ```typescript
-import { trackStickyBarEngagement, trackCTAClick } from '@/lib/posthog';
+import { trackStickyBarEngagement, trackCTAClick } from "@/lib/posthog";
 
 // When sticky bar appears:
-trackStickyBarEngagement('shown');
+trackStickyBarEngagement("shown");
 
 // When user clicks CTA:
 const handleStickyBarClick = () => {
-  trackCTAClick('sticky_bar', 'Get up to ₹10L against your car');
-  trackStickyBarEngagement('clicked');
+  trackCTAClick("sticky_bar", "Get up to ₹10L against your car");
+  trackStickyBarEngagement("clicked");
   scrollToForm();
 };
 
 // When user dismisses:
 const handleStickyBarClose = () => {
-  trackStickyBarEngagement('dismissed');
+  trackStickyBarEngagement("dismissed");
   setStickyBarVisible(false);
 };
 ```
@@ -433,6 +434,7 @@ Clarity provides additional insights beyond PostHog:
 - **User feedback:** In-page surveys (optional)
 
 Use Clarity to:
+
 - Identify UX friction (fields users struggle with)
 - Spot scroll blockers
 - Validate that CTA buttons are noticed
@@ -458,3 +460,67 @@ Use Clarity to:
 4. Review first week of data
 5. Identify top 3 drop-off points → prioritize fixes
 6. A/B test field order or messaging to improve conversion
+
+Based on the code in lib/posthog.ts, here are all the events currently being tracked:
+
+Form Funnel Events
+
+- form_started — user interacts with first field
+- form_screen_viewed — user navigates to a screen (properties: screen_number, screen_name)
+- form_field_interaction — user selects/fills a field (properties: field_name, field_value, screen_number)
+- form_validation_error — field validation fails (properties: field_name, error_message)
+- partial_lead_submitted — after step 1 (now captures name/phone)
+- form_submit_success — final submission (properties: product, employment, income, car value, loan amount, city, score, segment, flags, UTM params, status)
+- form_submit_error — submission failed (properties: error message, error type, product)
+- form_abandoned — NEVER CALLED (defined but not wired up — the hook isn't set)
+- success_screen_viewed — user sees success page (properties: lead name masked, phone masked, segment)
+
+Product & Qualification Events
+
+- product_selected — user picks LAC/UCL/NCL
+- lead_segmented — non-LAC product routed (properties: product, segment)
+- emi_preview_viewed — user views EMI calculation
+
+User Info Events
+
+- device_info — on page load (properties: device_type, user agent, viewport)
+- session_utm — on page load (properties: utm_source, utm_medium, utm_campaign, utm_content, utm_term, fbclid, landing URL)
+- page_view — page visited (properties: URL, referrer)
+
+Engagement Events
+
+- consent_checkbox_toggled — user checks/unchecks consent
+- sticky_bar_dismissed — mobile sticky bar closed
+- trust_bar_interaction — partner logo marquee engaged
+- cta_clicked — "Apply Now" button clicked
+- whatsapp_cta_clicked — WhatsApp CTA clicked (properties: source, scenario)
+
+Meta Pixel Events (lib/pixel.ts)
+
+- PageView — page load
+- ViewContent — form viewed
+- InitiateCheckout — first form interaction
+- Lead — form submission (with segment value and loan amount)
+
+---
+
+Problem: No Form Flow Data in PostHog
+
+None of the form events are firing. PostHog shows zero form\_\* events despite 200+ page views. This means:
+
+1. form_started never fires (first field interaction not being tracked)
+2. form_screen_viewed never fires
+3. Validation errors not logged
+4. Partial lead not submitted
+
+Why? The events fire on <LeadForm /> mount and field interactions, which require the form to actually be displayed and interacted with. Since mobile users weren't scrolling to the form before your layout flip, they never triggered any form events.
+
+After your mobile layout changes go live, you should start seeing form events. Track these metrics once users start interacting:
+
+- Step 1 completion rate (form_started → partial_lead_submitted after name/phone/consent)
+- Step 2 completion rate (car details validation)
+- Step 3 completion rate (loan details validation)
+- form_submit_success count vs form views
+- Top validation errors by field
+
+Want me to update the analytics dashboard to show these form-specific funnels once data starts flowing?

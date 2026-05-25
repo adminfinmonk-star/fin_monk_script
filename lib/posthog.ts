@@ -3,15 +3,21 @@
  * Tracks user behavior through the Finmonk LAC form funnel
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import { LeadPayload } from "./disqualifyLogic";
-import type { UTMData } from "./utm";
+import { UTMData } from "./utm";
 
 export interface PostHogEvent {
   event: string;
-  properties?: Record<string, any>;
+  properties?: Record<string, unknown>;
 }
+
+type PostHogWindow = {
+  init?: (key: string, opts?: Record<string, unknown>, a?: unknown) => void;
+  capture?: (event: string, props?: Record<string, unknown>) => void;
+  identify?: (id: string) => void;
+  people?: unknown[];
+  [k: string]: unknown;
+};
 
 /**
  * Initialize PostHog using official stub pattern.
@@ -26,72 +32,38 @@ export function initPostHog() {
     return;
   }
 
-  // Official PostHog stub — queues calls before script loads
-  // prettier-ignore
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (function (t: Document, e: any) {
-    let o: string[];
-    let n: number;
-    let p: HTMLScriptElement;
-    let r: HTMLScriptElement;
-    if (!e.__SV) {
-      (window as any).posthog = e;
-      e._i = [];
-      e.init = function (i: any, s: any, a: any) {
-        function g(t: any, e: string) {
-          const parts = e.split(".");
-          if (parts.length === 2) {
-            t = t[parts[0]];
-            e = parts[1];
-          }
-          t[e] = function (...args: any[]) {
-            t.push([e].concat(args));
-          };
-        }
-        p = t.createElement("script");
-        p.type = "text/javascript";
-        p.async = true;
-        p.src = (s.asset_host || "https://us-assets.i.posthog.com") + "/static/array.js";
-        r = t.getElementsByTagName("script")[0] as HTMLScriptElement;
-        r.parentNode?.insertBefore(p, r);
-        let u: any = e;
-        if (a !== undefined) {
-          u = (e[a] = []);
-        } else {
-          a = "posthog";
-        }
-        u.people = u.people || [];
-        u.toString = function (t: any) {
-          let e = "posthog";
-          if ("posthog" !== a) {
-            e += "." + a;
-          }
-          if (!t) {
-            e += " (stub)";
-          }
-          return e;
-        };
-        u.people.toString = function () {
-          return u.toString(1) + " (stub)";
-        };
-        o = "init capture register register_once register_for_session unregister unregister_for_session getFeatureFlag getFeatureFlagPayload isFeatureEnabled reloadFeatureFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSessionId getSurveys getActiveMatchingSurveys renderSurvey canRenderSurvey identify alias setPersonProperties groupIdentify".split(" ");
-        for (n = 0; n < o.length; n++) {
-          g(u, o[n]);
-        }
-        e._i.push([i, s, a]);
+  // Official PostHog stub — create a small, TypeScript-friendly stub that queues method calls
+  if (!(window as any).posthog) {
+    const phStub: any = [];
+    const methods = "init capture register register_once register_for_session unregister unregister_for_session getFeatureFlag getFeatureFlagPayload isFeatureEnabled reloadFeatureFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSessionId getSurveys getActiveMatchingSurveys renderSurvey canRenderSurvey identify alias setPersonProperties groupIdentify".split(" ");
+    methods.forEach((m) => {
+      phStub[m] = function () {
+        phStub.push([m].concat(Array.prototype.slice.call(arguments, 0)));
       };
-      e.__SV = 1;
-    }
-  })(document, (window as any).posthog || []);
+    });
+    phStub._i = [];
+    phStub.__SV = 1;
+    (window as any).posthog = phStub;
 
-  (window as any).posthog.init(posthogKey, {
-    api_host: "https://us.i.posthog.com",
-    asset_host: "https://us-assets.i.posthog.com",
-    person_profiles: "identified_only",
-    loaded: function (posthog: { identify: (id: string) => void }) {
-      posthog.identify(getOrCreateSessionId());
-    },
-  });
+    const script = document.createElement("script");
+    script.type = "text/javascript";
+    script.async = true;
+    script.src = "https://us-assets.i.posthog.com/static/array.js";
+    const first = document.getElementsByTagName("script")[0];
+    first.parentNode?.insertBefore(script, first);
+  }
+
+  const globalPosthog = (window as unknown as Window & { posthog?: PostHogWindow }).posthog;
+  if (globalPosthog && typeof globalPosthog.init === "function") {
+    globalPosthog.init(posthogKey, {
+      api_host: "https://us.i.posthog.com",
+      asset_host: "https://us-assets.i.posthog.com",
+      person_profiles: "identified_only",
+      loaded: function (posthogInstance: PostHogWindow | undefined) {
+        posthogInstance?.identify?.(getOrCreateSessionId());
+      },
+    });
+  }
 }
 
 /**
@@ -113,16 +85,15 @@ function getOrCreateSessionId(): string {
 /**
  * Track a custom event
  */
-export function track(event: string, properties?: Record<string, any>) {
+export function track(event: string, properties?: Record<string, unknown>) {
   if (typeof window === "undefined") return;
-
-  const posthog = (window as any).posthog;
+  const posthog = (window as unknown as Window & { posthog?: PostHogWindow }).posthog;
   if (!posthog) {
     console.log(`[PostHog Event] ${event}`, properties);
     return;
   }
 
-  posthog.capture(event, {
+  posthog.capture?.(event, {
     timestamp: new Date().toISOString(),
     ...properties,
   });
@@ -168,7 +139,7 @@ export function trackScreenView(screenNumber: number, screenName: string) {
  */
 export function trackFieldInteraction(
   fieldName: string,
-  fieldValue: any,
+  fieldValue: unknown,
   screenNumber: number
 ) {
   track("form_field_interaction", {
@@ -377,12 +348,12 @@ export function trackDeviceInfo() {
 /**
  * Session started with UTM parameters
  */
-export function trackSessionWithUTM(utm: UTMData) {
+export function trackSessionWithUTM(utm: UTMData | Record<string, string>) {
   track("session_utm", {
-    utm_source: utm.utm_source || "",
-    utm_medium: utm.utm_medium || "",
-    utm_campaign: utm.utm_campaign || "",
-    utm_content: utm.utm_content || "",
-    fbclid: utm.fbclid || "",
+    utm_source: (utm as UTMData).utm_source || "",
+    utm_medium: (utm as UTMData).utm_medium || "",
+    utm_campaign: (utm as UTMData).utm_campaign || "",
+    utm_content: (utm as UTMData).utm_content || "",
+    fbclid: (utm as UTMData).fbclid || "",
   });
 }
